@@ -39,6 +39,7 @@ services:
     environment:
       DATABASE_URL: postgresql://optiroute:optiroute123@postgres:5432/optiroute
       RABBITMQ_URL: amqp://optiroute:optiroute123@rabbitmq:5672/
+      TOMTOM_API_KEY: "19esvUIUdVPlPeqO7yNKqtlf481fncJT"
     volumes:
       - shared_uploads:/app/shared/uploads
     depends_on:

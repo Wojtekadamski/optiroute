@@ -4,17 +4,80 @@ Kompleksowy projekt demonstracyjny implementujący architekturę mikroserwisów 
 
 Projekt zawiera frontend (React + Vite) oraz kilka usług backendowych w Pythonie, uruchamianych za pomocą Docker Compose.
 
+### Status projektu (na dzień 3 listopada 2025)
+
+#### Zaimplementowane funkcjonalności:
+- ✅ Podstawowa struktura mikroserwisów
+- ✅ Upload plików CSV z adresami
+- ✅ Geokodowanie adresów (Nominatim API)
+- ✅ Kolejkowanie zadań (RabbitMQ)
+- ✅ System śledzenia statusu zadań
+- ✅ Integracja z TomTom Routing API
+- ✅ Agregacja danych środowiskowych (pogoda, jakość powietrza)
+- ✅ Interfejs użytkownika z wizualizacją map
+
+#### Modyfikatory tras:
+System uwzględnia następujące czynniki wpływające na czas przejazdu:
+- Opady deszczu: +20% do czasu przejazdu
+- Opady śniegu: +30% do czasu przejazdu
+- Silny wiatr (>10 m/s): +10% do czasu przejazdu
+- Zła jakość powietrza (PM2.5 > 50): +10% do czasu przejazdu
+- Bardzo zła jakość powietrza (PM10 > 100): +15% do czasu przejazdu
+
+#### W trakcie rozwoju:
+- 🚧 Optymalizacja wydajności geokodowania
+- 🚧 Rozszerzenie modyfikatorów tras
+- 🚧 Testy jednostkowe i integracyjne
+- 🚧 Dokumentacja API (Swagger/OpenAPI)
+
 ## Zawartość repozytorium
 
-- `frontend/` — aplikacja kliencka napisana w TypeScript z Vite (interfejs użytkownika, mapy, upload plików)
-- `services/upload-service/` — serwis odpowiadający za przyjmowanie plików i ich wstępne przetwarzanie
-- `services/optimization-service/` — główny serwis optymalizujący trasy (geokoder + optimizer)
-- `services/data-aggregator-service/` — agreguje dane wejściowe do formatu potrzebnego optymalizatorowi
-- `services/results-service/` — serwis odpowiedzialny za przechowywanie/udostępnianie wyników
-- `nginx/` — konfiguracja Nginx do reverse-proxy/serwowania frontend
-- `docker-compose.yml` — kompozycja wszystkich usług do szybkiego uruchomienia
+### Struktura projektu
+- `frontend/` — aplikacja kliencka napisana w TypeScript z Vite
+  - Interfejs użytkownika z obsługą drag-and-drop plików CSV
+  - Interaktywna mapa z użyciem react-leaflet
+  - Śledzenie statusu zadań w czasie rzeczywistym
+  - Wizualizacja zoptymalizowanych tras
 
-> Uwaga: implementacja serwisów znajduje się w katalogach `services/*/app/` — tam znajdziesz pliki `main.py`, `optimizer.py`, `geocoder.py` i inne.
+### Serwisy backendowe
+- `services/upload-service/` 
+  - Przyjmowanie i walidacja plików CSV
+  - Integracja z PostgreSQL do śledzenia zadań
+  - Kolejkowanie w RabbitMQ
+  - Obsługa współdzielonych wolumenów
+
+- `services/optimization-service/`
+  - Geokodowanie adresów (Nominatim API)
+  - Optymalizacja tras (TomTom Routing API)
+  - Worker do przetwarzania zadań z kolejki
+  - Aktualizacja statusów i wyników
+
+- `services/data-aggregator-service/`
+  - Integracja z OpenWeatherMap API
+  - Integracja z OpenAQ API
+  - Obliczanie modyfikatorów czasu przejazdu
+  - Agregacja danych środowiskowych
+
+- `services/results-service/`
+  - REST API do pobierania wyników
+  - Integracja z bazą danych PostgreSQL
+  - Monitorowanie statusu zadań
+  - Format JSON dla wyników optymalizacji
+
+### Infrastruktura
+- `nginx/` — reverse proxy i serwer statyczny
+  - Load balancing
+  - Routing żądań do mikroserwisów
+  - Serwowanie aplikacji frontendowej
+  - Konfiguracja CORS i limitów
+
+- `docker-compose.yml` — orkiestracja kontenerów
+  - Definicje wszystkich serwisów
+  - Konfiguracja sieci i wolumenów
+  - Zarządzanie sekretami i zmiennymi środowiskowymi
+  - Zależności między serwisami
+
+> Uwaga: Szczegółowa implementacja serwisów znajduje się w katalogach `services/*/app/` — tam znajdziesz pliki `main.py`, `optimizer.py`, `geocoder.py` i inne.
 
 ## Wymagania
 
@@ -84,16 +147,61 @@ python app/main.py
 
 Uwaga: w środowisku lokalnym może być konieczne ustawienie zmiennych środowiskowych (np. porty, dane konfiguracyjne). Sprawdź pliki `main.py` w katalogach `services/*/app/` aby dowiedzieć się, jakie zmienne są wymagane.
 
-## Konfiguracja i punkty końcowe
+## Konfiguracja i punkty końcowe (API)
 
-Każdy serwis wystawia swoje endpointy w `services/<nazwa>/app/main.py` — tam znajdują się szczegóły dostępnych tras HTTP i wymaganych payloadów. Przykładowe role serwisów:
+### Upload Service
+- `POST /api/v1/upload`
+  - Przyjmuje: `multipart/form-data` z plikiem CSV
+  - Zwraca: `{ "job_id": "uuid" }`
+  - Waliduje format pliku i tworzy nowe zadanie
 
-- upload-service: przyjmowanie plików/CSV i wysyłanie ich do agregatora
-- data-aggregator-service: transformacja i walidacja danych wejściowych
-- optimization-service: geokodowanie i optymalizacja tras
-- results-service: przechowywanie oraz udostępnianie wyników optymalizacji
+### Results Service
+- `GET /api/v1/results/{job_id}`
+  - Zwraca status i wyniki zadania
+  - Statusy: `PENDING`, `PROCESSING`, `COMPLETED`, `FAILED`
+  - Format wyników zawiera zgeokodowane punkty i zoptymalizowaną trasę
 
-Jeśli chcesz dodać szczegółową dokumentację endpointów, rozważ wygenerowanie OpenAPI/Swagger lub dopisanie krótkiego opisu endpoints w tym pliku README.
+### Data Aggregator Service
+- `GET /api/v1/environment`
+  - Parametry: `city` (nazwa miasta)
+  - Zwraca dane środowiskowe i modyfikatory:
+    - Warunki pogodowe
+    - Jakość powietrza
+    - Całkowity modyfikator czasu przejazdu
+
+### Format danych wejściowych (CSV)
+```csv
+adres
+"ul. Krakowska 1, Wrocław"
+"ul. Świdnicka 5, Wrocław"
+"pl. Grunwaldzki 10, Wrocław"
+```
+
+### Format wyników (JSON)
+```json
+{
+  "status": "COMPLETED",
+  "result": {
+    "geocoded_stops": [
+      {
+        "address": "ul. Krakowska 1, Wrocław",
+        "lat": 51.1079,
+        "lon": 17.0385
+      }
+    ],
+    "route": {
+      "total_distance": 12500,
+      "total_time": 1800,
+      "points": [...]
+    },
+    "environment": {
+      "weather_modifier": 1.2,
+      "air_quality_modifier": 1.1,
+      "total_modifier": 1.32
+    }
+  }
+}
+```
 
 ## Struktura katalogów (skrót)
 

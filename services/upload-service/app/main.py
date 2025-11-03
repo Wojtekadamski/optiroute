@@ -49,7 +49,6 @@ app = FastAPI(title="Upload Service")
 def on_startup():
     # Funkcja uruchamiana przy starcie serwera
     # Czeka, aż baza danych będzie gotowa i tworzy tabelę 'jobs'
-    # (W prawdziwej produkcji użylibyśmy np. Alembic do migracji)
     import time
     time.sleep(5) # Daj postgresowi chwilę na start
     Base.metadata.create_all(bind=engine)
@@ -61,7 +60,7 @@ async def create_upload_job(file: UploadFile = File(...), db: Session = Depends(
     """
     Ten endpoint przyjmuje plik CSV, zapisuje go i tworzy zadanie.
     """
-    # 1. Sprawdź, czy to CSV (prosta walidacja)
+    # 1. Sprawdź, czy to CSV 
     if not file.filename.endswith(".csv"):
         raise HTTPException(status_code=400, detail="Invalid file type. Only CSV accepted.")
 

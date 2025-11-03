@@ -1,74 +1,73 @@
-import requests
+import httpx
 import os
-from typing import List, Dict, Any
-import json
+from typing import List, Dict, Any, Optional
 
-TOMTOM_API_KEY = os.getenv("TOMTOM_API_KEY")
+# Adres URL API TomTom Waypoint Optimization
+TOMTOM_API_URL = "https://api.tomtom.com/routing/waypointoptimization/1"
 
-def optimize_route(locations: List[Dict[str, Any]]) -> Dict[str, Any]:
+# Funkcja pomocnicza do formatowania lokalizacji dla TomTom
+def format_locations_for_tomtom(stops: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
-    Optimize route using TomTom Routing API.
-    locations: List of dictionaries containing location data and modifiers
+    Konwertuje naszą listę przystanków na format JSON wymagany przez TomTom.
+    (Bez zmian)
     """
-    if not TOMTOM_API_KEY:
-        raise ValueError("TOMTOM_API_KEY environment variable not set")
+    locations = []
+    for stop in stops:
+        if "lat" in stop and "lon" in stop:
+            locations.append({
+                "point": {
+                    "latitude": stop["lat"],
+                    "longitude": stop["lon"]
+                }
+            })
+    return locations
 
-    # Format locations for TomTom API
-    waypoints = []
-    for loc in locations:
-        lat, lon = loc['coords']
-        waypoints.append({
-            "point": {
-                "latitude": lat,
-                "longitude": lon
-            },
-            "timeWindow": {
-                "start": "2024-01-01T09:00:00Z",  # Example time window
-                "end": "2024-01-01T17:00:00Z"
-            }
-        })
 
-    # Prepare request body
-    request_body = {
-        "vehicleCapacity": 1000,  # Example capacity
-        "arrivalWindow": {
-            "start": "2024-01-01T09:00:00Z",
-            "end": "2024-01-01T17:00:00Z"
-        },
-        "waypoints": waypoints,
+# Główna funkcja optymalizacji trasy z TomTom
+def optimize_route_with_tomtom(job_id: str, stops: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """
+    Wysyła listę przystanków do TomTom Waypoint Optimization API
+    i zwraca zoptymalizowaną trasę.
+    """
+    api_key = os.getenv("TOMTOM_API_KEY")
+    if not api_key or api_key == "TWOJ_KLUCZ_API_WKLEJ_TUTAJ":
+        print(f"[{job_id}] BŁĄD: Brak klucza TOMTOM_API_KEY w zmiennych środowiskowych.", flush=True)
+        raise ValueError("Brak klucza TOMTOM_API_KEY. Sprawdź docker-compose.yml")
+
+    locations_payload = format_locations_for_tomtom(stops)
+    
+    if len(locations_payload) < 2:
+        print(f"[{job_id}] Błąd: Zbyt mało poprawnych punktów do optymalizacji ({len(locations_payload)}).", flush=True)
+        return {"error": "Zbyt mało poprawnych punktów do optymalizacji (wymagane min. 2)."}
+
+    # Budujemy pełny URL z kluczem API
+    url = f"{TOMTOM_API_URL}?key={api_key}"
+    
+    # budowanie ładunku żądania (JSON) 
+    payload = {
+        "waypoints": locations_payload,
         "options": {
-            "traffic": "live"
+            "travelMode": "car",
+            "traffic": "live",
+            "departAt": "now" 
         }
     }
-
-    try:
-        response = requests.post(
-            f"https://api.tomtom.com/routing/1/vrp?key={TOMTOM_API_KEY}",
-            json=request_body
-        )
-        response.raise_for_status()
-        
-        result = response.json()
-        
-        # Transform TomTom response into our format
-        optimized_route = {
-            "route": [],
-            "total_distance": result.get("summary", {}).get("distance", 0),
-            "total_time": result.get("summary", {}).get("time", 0)
-        }
-        
-        # Extract ordered waypoints
-        for stop in result.get("routes", [{}])[0].get("stops", []):
-            point = stop.get("point", {})
-            optimized_route["route"].append({
-                "lat": point.get("latitude"),
-                "lon": point.get("longitude"),
-                "arrival_time": stop.get("arrival")
-            })
-        
-        return optimized_route
+    # Logowanie wysyłanych danych
+    print(f"[{job_id}] Wysyłanie {len(locations_payload)} punktów do TomTom API (Waypoint Optimization) na adres: {TOMTOM_API_URL}", flush=True)
     
-    except requests.exceptions.RequestException as e:
-        raise Exception(f"TomTom API error: {str(e)}")
+    try:
+        with httpx.Client(timeout=30.0) as client:
+            response = client.post(url, json=payload)
+            response.raise_for_status()
+            data = response.json()
+            
+            print(f"[{job_id}] Otrzymano pomyślną odpowiedź z TomTom.", flush=True)
+            return data
+
+    except httpx.HTTPStatusError as e:
+        print(f"[{job_id}] Błąd HTTP podczas optymalizacji TomTom: {e.response.status_code}", flush=True)
+        print(f"[{job_id}] Odpowiedź błędu: {e.response.text}", flush=True)
+        raise ValueError(f"Błąd TomTom API: {e.response.text}")
     except Exception as e:
-        raise Exception(f"Route optimization error: {str(e)}")
+        print(f"[{job_id}] Nieoczekiwany błąd podczas optymalizacji TomTom: {e}", flush=True)
+        raise ValueError(f"Nieoczekiwany błąd podczas optymalizacji: {e}")
