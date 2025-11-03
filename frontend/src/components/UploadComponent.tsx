@@ -1,72 +1,90 @@
-import React from 'react';
 import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import axios from 'axios';
 
-interface UploadComponentProps {
-  onUploadComplete: (jobId: string) => void;
+// Definiujemy, jakie propsy przyjmuje nasz komponent
+interface UploadProps {
+  onUploadSuccess: (jobId: string) => void;
+  onError: (message: string | null) => void;
 }
 
-export const UploadComponent: React.FC<UploadComponentProps> = ({ onUploadComplete }) => {
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+function UploadComponent({ onUploadSuccess, onError }: UploadProps) {
+  const [isLoading, setIsLoading] = useState(false);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    const file = acceptedFiles[0];
-    if (!file) return;
-
-    if (!file.name.endsWith('.csv')) {
-      setError('Please upload a CSV file');
+    if (acceptedFiles.length === 0) {
+      onError('Nie wybrano pliku lub plik jest nieprawidłowy.');
       return;
     }
 
-    setUploading(true);
-    setError(null);
+    const file = acceptedFiles[0];
 
+    // Sprawdź, czy to na pewno CSV po stronie klienta
+    if (!file.name.endsWith('.csv')) {
+      onError('Nieprawidłowy typ pliku. Proszę wybrać plik .csv');
+      return;
+    }
+
+    setIsLoading(true);
+    onError(null); // Resetuj błędy
+
+    // Stwórz FormData, aby wysłać plik
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('file', file); // 'file' musi zgadzać się z nazwą w FastAPI
 
     try {
+      // Wyślij plik do naszego upload-service
+      // Nginx przekieruje to zapytanie
       const response = await axios.post('/api/v1/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
 
-      const { job_id } = response.data;
-      onUploadComplete(job_id);
+      // Jeśli się uda, przekaż job_id do rodzica (App.tsx)
+      onUploadSuccess(response.data.job_id);
+
     } catch (err) {
-      setError('Upload failed. Please try again.');
-      console.error('Upload error:', err);
-    } finally {
-      setUploading(false);
+      if (axios.isAxiosError(err) && err.response) {
+        // Jeśli backend zwrócił błąd (np. 400), przekaż go
+        onError(err.response.data.detail || 'Błąd serwera.');
+      } else {
+        onError('Nie można połączyć się z serwerem.');
+      }
+      console.error(err);
+      setIsLoading(false);
     }
-  }, [onUploadComplete]);
+  }, [onUploadSuccess, onError]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'text/csv': ['.csv'],
+      'text/csv': ['.csv'], // Akceptuj tylko pliki CSV
     },
-    multiple: false,
+    maxFiles: 1,
   });
 
   return (
-    <div className="upload-container">
-      <div
-        {...getRootProps()}
-        className={`dropzone ${isDragActive ? 'active' : ''} ${uploading ? 'uploading' : ''}`}
-      >
-        <input {...getInputProps()} />
-        {uploading ? (
-          <p>Uploading...</p>
-        ) : isDragActive ? (
-          <p>Drop the CSV file here</p>
-        ) : (
-          <p>Drag &amp; drop a CSV file here, or click to select one</p>
-        )}
-      </div>
-      {error && <div className="error-message">{error}</div>}
+    <div
+      {...getRootProps()}
+      className={`p-10 border-4 border-dashed rounded-lg text-center cursor-pointer transition-colors
+        ${isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}
+        ${isLoading ? 'opacity-50' : ''}
+      `}
+    >
+      <input {...getInputProps()} />
+      {isLoading ? (
+        <p>Przesyłanie...</p>
+      ) : isDragActive ? (
+        <p className="text-blue-700">Upuść plik tutaj...</p>
+      ) : (
+        <p className="text-gray-600">
+          Przeciągnij i upuść plik .csv, albo kliknij by go wybrać.
+        </p>
+      )}
     </div>
   );
-};
+}
+
+export default UploadComponent;
+

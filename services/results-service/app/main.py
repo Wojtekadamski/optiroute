@@ -37,13 +37,13 @@ def get_db():
 # To dobra praktyka, aby FastAPI wiedziało, jak ma wyglądać JSON zwrotny
 
 class JobStatusResponse(BaseModel):
-    job_id: uuid.UUID
+   
+    id: uuid.UUID 
     status: str
     result: dict | None = None # Wynik będzie słownikiem (JSON) lub None
 
-    # Pozwól Pydantic czytać dane z modelu SQLAlchemy
     class Config:
-        orm_mode = True 
+        from_attributes = True
 
 # --- 3. Inicjalizacja Aplikacji FastAPI ---
 
