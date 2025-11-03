@@ -1,42 +1,150 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
+/* Import czcionki Inter (globalnie) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* --- Globalny Reset i Tło --- */
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #111827; /* Ciemnoszary (Tailwind gray-900) */
+  color: #E5E7EB; /* Jasnoszary (Tailwind gray-200) */
+  margin: 0;
   padding: 2rem;
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+/* --- Główny Kontener / Karta --- */
+.app-container {
+  width: 100%;
+  max-width: 64rem; /* 1024px (Tailwind max-w-4xl) */
+  background-color: #1F2937; /* Ciemniejsza karta (Tailwind gray-800) */
+  border-radius: 1.5rem; /* 24px */
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  padding: 2.5rem;
+}
+
+.app-header {
+  font-size: 2.25rem; /* 36px */
+  font-weight: 700;
+  text-align: center;
+  color: white;
+  margin-bottom: 2rem;
+}
+
+/* --- Styl przycisków --- */
+.button-primary {
+  margin-top: 1.5rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background-color: #2563EB; /* Niebieski */
+  color: white;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.button-primary:hover {
+  background-color: #1D4ED8;
+}
+
+/* --- Komponent Upload --- */
+.upload-box {
+  padding: 2.5rem;
+  border: 4px dashed #4B5563; /* gray-600 */
+  border-radius: 0.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.upload-box:hover {
+  border-color: #6B7280; /* gray-500 */
+}
+.upload-box-active {
+  border-color: #3B82F6; /* blue-500 */
+  background-color: #1F2937; /* gray-800 */
+}
+.upload-box p {
+  color: #9CA3AF; /* gray-400 */
+}
+.upload-box-active p {
+  color: #3B82F6; /* blue-500 */
+}
+
+/* --- Ekran ładowania --- */
+.loading-spinner {
+  animation: spin 1s linear infinite;
+  border-radius: 50%;
+  width: 3rem; /* 48px */
+  height: 3rem; /* 48px */
+  border-bottom-width: 2px;
+  border-color: #3B82F6; /* blue-500 */
+  margin: 1.5rem auto 0 auto;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* --- Komponent Wyników --- */
+.results-section-header {
+  font-size: 1.25rem; /* 20px */
+  font-weight: 500;
+  color: white;
+  margin-bottom: 0.75rem;
+}
+.results-box {
+  background-color: #374151; /* gray-700 */
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+.results-list {
+  list-style-type: decimal;
+  list-style-position: inside;
+  font-size: 1.125rem; /* 18px */
+  color: #D1D5DB; /* gray-300 */
+}
+.results-list li {
+  padding: 0.25rem 0;
+}
+.results-summary-box {
+  display: flex;
+  justify-content: space-around;
   text-align: center;
 }
-
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
+.results-summary-label {
+  font-size: 0.875rem; /* 14px */
+  color: #9CA3AF; /* gray-400 */
+  display: block;
 }
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+.results-summary-value {
+  font-size: 1.5rem; /* 24px */
+  font-weight: 700;
+  color: #34D399; /* green-400 */
 }
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.results-json-details summary {
+  cursor: pointer;
+  color: #9CA3AF; /* gray-400 */
 }
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.results-json-details summary:hover {
+  color: white;
 }
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.results-json-pre {
+  background-color: #111827; /* gray-900 */
+  color: white;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin-top: 0.5rem;
+  font-size: 0.875rem; /* 14px */
 }
 
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
+/* --- Mapa --- */
+.map-container {
+  width: 100%;
+  height: 400px;
+  margin-bottom: 1.5rem;
+  border-radius: 0.5rem;
+  overflow: hidden; /* Ważne dla rounded corners */
 }

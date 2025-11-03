@@ -64,21 +64,21 @@ function UploadComponent({ onUploadSuccess, onError }: UploadProps) {
     maxFiles: 1,
   });
 
+  // --- ZAKTUALIZOWANY RETURN (UŻYWA KLAS Z App.css) ---
   return (
     <div
       {...getRootProps()}
-      className={`p-10 border-4 border-dashed rounded-lg text-center cursor-pointer transition-colors
-        ${isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}
-        ${isLoading ? 'opacity-50' : ''}
-      `}
+      // Używamy klas z App.css i dodajemy styl 'loading'
+      className={`upload-box ${isDragActive ? 'upload-box-active' : ''} ${isLoading ? 'loading-opacity' : ''}`}
+      style={isLoading ? { opacity: 0.5 } : {}} // Dodajemy styl inline dla ładowania
     >
       <input {...getInputProps()} />
       {isLoading ? (
         <p>Przesyłanie...</p>
       ) : isDragActive ? (
-        <p className="text-blue-700">Upuść plik tutaj...</p>
+        <p>Upuść plik tutaj...</p>
       ) : (
-        <p className="text-gray-600">
+        <p>
           Przeciągnij i upuść plik .csv, albo kliknij by go wybrać.
         </p>
       )}
@@ -87,4 +87,3 @@ function UploadComponent({ onUploadSuccess, onError }: UploadProps) {
 }
 
 export default UploadComponent;
-

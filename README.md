@@ -136,6 +136,9 @@ npm create vite@latest . -- --template react-ts
 npm install react-leaflet leaflet
 npm install -D @types/react-leaflet @types/leaflet
 npm install react-dropzone axios
+npm install -D tailwindcss postcss autoprefixer
+npx tailwindcss init -p
+npm install -D @tailwindcss/postcss
 ```
 
 ## Uruchamianie usług backendowych lokalnie (bez Dockera)
