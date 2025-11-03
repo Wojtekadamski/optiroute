@@ -68,7 +68,7 @@ async def create_upload_job(file: UploadFile = File(...), db: Session = Depends(
     # 2. Wygeneruj unikalne ID i ścieżkę zapisu
     job_id = uuid.uuid4()
     # Zapiszemy plik w udostępnionym wolumenie, aby worker miał do niego dostęp
-    file_path = f"/app/uploads/{job_id}_{file.filename}" 
+    file_path = f"/app/shared/uploads/{job_id}_{file.filename}"
     
     # Upewnij się, że katalog /app/uploads istnieje
     os.makedirs(os.path.dirname(file_path), exist_ok=True)

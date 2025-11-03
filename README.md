@@ -25,6 +25,12 @@ Projekt zawiera frontend (React + Vite) oraz kilka usług backendowych w Pythoni
 
 ## Szybki start (Docker Compose)
 
+załadowanie pakietów do frontendu (z nodejs)
+npm create vite@latest . -- --template react-ts
+npm install react-leaflet leaflet
+npm install -D @types/react-leaflet @types/leaflet
+npm install react-dropzone axios
+
 Najprostszy sposób uruchomienia całego stosu to użycie Docker Compose. W katalogu głównym projektu uruchom:
 
 ```powershell
